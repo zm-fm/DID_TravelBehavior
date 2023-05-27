@@ -13,27 +13,7 @@ from DMLDiD import dmldid
 from DRDID import drdid
 from DML_DRDID import dml_drdid
 from baseline import twfe, semi_did
-
-
-def did(df: pd.DataFrame, model: str, method, d_col: str, x_cols: list, y_cols: list, t_col=None, panel=True):
-    """
-    [input]
-    - df : pd.DataFrame input data table
-    - model : machine learning model used
-    - method: estimator used
-    - d_col : str column name of treatment variable
-    - x_cols : list column names of control variables
-    - y_col : list column names of outcome(s), single-element for rcs
-    - t_col : str column name of time variable, None for panel
-    - panel : boolean indicating if it is panel
-    [return]
-    - result : dictionary of estimated ATT, standard error, significance testing, and 95% confidence interval
-    """
-    if model == 'N.A.':
-        result = method(df, d_col, x_cols, y_cols, t_col, panel=panel)
-    else:
-        result = method(df, d_col, x_cols, y_cols, t_col, model=model, panel=panel)
-    return result
+from utils import model_selection, did
 
 
 if __name__ == "__main__":
@@ -57,8 +37,8 @@ if __name__ == "__main__":
     x_cols.extend(['edu_' + str(i + 1) for i in range(4)])
 
     # list of methods and models used
-    dct_method = {'DMLDiD': dmldid, 'DRDiD': drdid, 'DML_DRDiD': dml_drdid, 'Abadie': semi_did, 'TWFE': twfe}
-    settings = list(itertools.product(['DMLDiD', 'DRDiD', 'DML_DRDiD'], ['Linear', 'Lasso', 'GB', 'RF', 'MLP']))
+    dct_method = {'DMLDiD': dmldid, 'DRDID': drdid, 'DML_DRDID': dml_drdid, 'Abadie': semi_did, 'TWFE': twfe}
+    settings = list(itertools.product(['DMLDiD', 'DRDID', 'DML_DRDID'], ['Linear', 'Lasso', 'GB', 'RF', 'MLP']))
     settings.extend([('TWFE', 'N.A.'), ('Abadie', 'N.A.')])
 
     print('All workers')
@@ -67,13 +47,14 @@ if __name__ == "__main__":
             t = time.time()
             method_name, model = setting
             print('Outcome: {}, Method: {}, ML model: {}'.format(y_col, method_name, model))
+            ps_model, or_model = model_selection(model)
             method = dct_method.get(method_name)
             # TWFE changes data table, changing outcome0, outcome1 to Y1, Y0
             if method_name == 'TWFE':
                 df_ = df.copy()
-                result = did(df_, model, method, d_col, x_cols, y_col, panel=True)
+                result = did(df_, ps_model, or_model, method, d_col, x_cols, y_col, panel=True)
             else:
-                result = did(df, model, method, d_col, x_cols, y_col, panel=True)
+                result = did(df, ps_model, or_model, method, d_col, x_cols, y_col, panel=True)
             print(result)
             print('Time spent: {}'.format(time.time() - t))
 
@@ -84,12 +65,13 @@ if __name__ == "__main__":
             t = time.time()
             method_name, model = setting
             print('Outcome: {}, Method: {}, ML model: {}'.format(y_col, method_name, model))
+            ps_model, or_model = model_selection(model)
             method = dct_method.get(method_name)
             # TWFE changes data table, changing outcome0, outcome1 to Y1, Y0
             if method_name == 'TWFE':
                 df_ = df.copy()
-                result = did(df_, model, method, d_col, x_cols, y_col, panel=True)
+                result = did(df_, ps_model, or_model, method, d_col, x_cols, y_col, panel=True)
             else:
-                result = did(df, model, method, d_col, x_cols, y_col, panel=True)
+                result = did(df, ps_model, or_model, method, d_col, x_cols, y_col, panel=True)
             print(result)
             print('Time spent: {}'.format(time.time() - t))

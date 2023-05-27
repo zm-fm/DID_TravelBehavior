@@ -14,7 +14,7 @@ pd.set_option('max_column', 500)
 pd.set_option('display.width', 500)
 np.set_printoptions(threshold=sys.maxsize)
 
-path = '' # ignored for privacy
+path = 'D:/中大工作/研究/GRF 2021/data/empirical data/NHTS processed/'
 # recoding dictionaries
 dct_inc = {1: 1, 2: 1, 3: 2, 4: 3, 5: 3, 6: 4, 7: 4, 8: 5, 9: 5, 10: 5, 11: 6, 12: 6, 13: 6, 14: 6, 15: 6,
            16: 7, 17: 7, 18: 8}

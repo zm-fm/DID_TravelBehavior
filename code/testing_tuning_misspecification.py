@@ -1,4 +1,4 @@
-# to tune hyperparameters of GBM, RF, and MLP for paper
+# to tune hyperparameters of GB, RF, and MLP for paper, with model misspecification
 
 import pandas as pd
 from tqdm import tqdm
@@ -29,30 +29,29 @@ if __name__ == "__main__":
     dct_names = {'GBM': ['n_estimators', 'max_depth', 'learning_rate'],
                  'RF': ['n_estimators', 'max_depth', 'min_samples_leaf'],
                  'MLP': ['hidden_layer_sizes', 'alpha']}
-    data_settings = list(itertools.product([True, False], [False, True], [False, True]))
+    data_settings = list(itertools.product([True, False], [(True, False), (False, True)]))
     model_settings = list(itertools.product(['DMLDiD', 'DRDID', 'DML_DRDID'], ['GBM', 'RF', 'MLP']))
     for data_setting in data_settings:
         results = {'Bias': [], 'Cover': [], 'Length': [], 'PS': [], 'OR': [], 'Method': [], 'Model': [], 'Param': []}
-        panel, hetero, unobs = data_setting
-        data_scene = str(int(panel)) + str(int(hetero)) + str(int(unobs))
+        panel, (mis_ps, mis_or) = data_setting
         t = time.time()
-        print('panel? {} heterogeneous effect? {} unobserved confounding? {}'.format(panel, hetero, unobs))
+        print('panel? {} PS mis? {} OR mis? {}'.format(panel, mis_ps, mis_or))
+
         for model_setting in model_settings:
             method_name, model = model_setting
             print('method {} model {}'.format(method_name, model))
             time.sleep(1)
 
-            method = dct_method.get(method_name)
             params = dct_params.get(model)
             names = dct_names.get(model)
+            method = dct_method.get(method_name)
             for param in params:
                 dct_param = dict(zip(names, param))
                 ps_model, or_model = model_selection(model, None)
                 ps_model.set_params(**dct_param)
                 or_model.set_params(**dct_param)
-
                 for _ in tqdm(range(n)):
-                    df = simulate_data(theta=true_att, panel=panel, hetero=hetero, unobs=unobs)
+                    df = simulate_data(theta=true_att, panel=panel, hetero=False, unobs=False, mis_ps=mis_ps, mis_or=mis_or)
                     try:
                         bias, cover, length, ps_score, or_score = did_simulation(df, ps_model, or_model, method, panel=panel)
                         results.get('Bias').append(bias)
@@ -68,7 +67,7 @@ if __name__ == "__main__":
                         continue
         print('time spent: {}'.format(time.time() - t))
         df_result = pd.DataFrame(results)
-        df_result.to_csv('tuning_detailed_' + data_scene + '.csv', index=False)
+        df_result.to_csv('tuning_misspecs_detailed_' + str(int(panel)) + str(1 - int(mis_ps)) + str(1 - int(mis_or)) + '.csv', index=False)
         # get means
         df_summary = df_result.groupby(['Method', 'Model', 'Param'])[['Bias', 'Cover', 'Length', 'PS', 'OR']].mean()
         df_median = df_result.groupby(['Method', 'Model', 'Param'])['Bias'].median().to_frame('Median')
@@ -77,4 +76,4 @@ if __name__ == "__main__":
             apply(lambda x: mean_squared_error([true_att] * len(x), x, squared=False)).to_frame('RMSE')
         df_summary = pd.merge(df_summary, df_median, left_index=True, right_index=True)
         df_summary = pd.merge(df_summary, df_rmse, left_index=True, right_index=True)
-        df_summary.to_csv('tuning_summary_' + data_scene + '.csv')
+        df_summary.to_csv('tuning_misspecs_summary_' + str(int(panel)) + str(1 - int(mis_ps)) + str(1 - int(mis_or)) + '.csv')

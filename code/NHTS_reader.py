@@ -15,7 +15,7 @@ pd.set_option('max_column', 500)
 pd.set_option('display.width', 500)
 np.set_printoptions(threshold=sys.maxsize)
 
-path = '' # ignored for privacy
+path = 'D:/中大工作/研究/GRF 2021/data/empirical data/'
 
 # note to self
 # HHFAMINC not consistent

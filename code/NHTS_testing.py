@@ -14,27 +14,7 @@ from DMLDiD import dmldid
 from DRDID import drdid
 from DML_DRDID import dml_drdid
 from baseline import twfe, semi_did
-
-
-def did(df: pd.DataFrame, model: str, method, d_col: str, x_cols: list, y_cols: list, t_col=None, panel=True):
-    """
-    [input]
-    - df : pd.DataFrame input data table
-    - model : machine learning model used
-    - method: estimator used
-    - d_col : str column name of treatment variable
-    - x_cols : list column names of control variables
-    - y_col : list column names of outcome(s), single-element for rcs
-    - t_col : str column name of time variable, None for panel
-    - panel : boolean indicating if it is panel
-    [return]
-    - result : dictionary of estimated ATT, standard error, significance testing, and 95% confidence interval
-    """
-    if model == 'N.A.':
-        result = method(df, d_col, x_cols, y_cols, t_col, panel=panel)
-    else:
-        result = method(df, d_col, x_cols, y_cols, t_col, model=model, panel=panel)
-    return result
+from utils import model_selection, did
 
 
 if __name__ == "__main__":
@@ -42,7 +22,7 @@ if __name__ == "__main__":
     pd.set_option('display.width', 500)
     np.set_printoptions(threshold=sys.maxsize)
 
-    path = '' # ignored for privacy
+    path = 'D:/中大工作/研究/GRF 2021/data/empirical data/NHTS processed/'
     # read data
     df = pd.read_csv(path + 'texas_combined.csv')
     # prepare variables
@@ -62,13 +42,13 @@ if __name__ == "__main__":
               'BORNINUS', 'DRIVER', 'R_AGE', 'R_SEX', 'WORKER', 'SCHTYP']
     x_cols.extend([c for c in df.columns if 'HHFAMINC' in c or 'EDUC' in c or 'OCCAT' in c or 'LIF_CYC' in c
                    or 'FUELTYPE' in c or 'VEHTYPE' in c])
-    y_cols = ['CNTTDTR', 'MCUSED', 'NBIKETRP', 'NWALKTRP', 'PTUSED', 'TIMETOWK', 'YEARMILE']
+    y_cols = ['CNTTDTR', 'TIMETOWK', 'YEARMILE']
     d_col = 'D'
     t_col = 'T'
 
     # list of methods and models used
-    dct_method = {'DMLDiD': dmldid, 'DRDiD': drdid, 'DML_DRDiD': dml_drdid, 'Abadie': semi_did, 'TWFE': twfe}
-    settings = list(itertools.product(['DMLDiD', 'DRDiD', 'DML_DRDiD'], ['Linear', 'Lasso', 'GB', 'RF', 'MLP']))
+    dct_method = {'DMLDiD': dmldid, 'DRDID': drdid, 'DML_DRDID': dml_drdid, 'Abadie': semi_did, 'TWFE': twfe}
+    settings = list(itertools.product(['DMLDiD', 'DRDID', 'DML_DRDID'], ['Linear', 'Lasso', 'GB', 'RF', 'MLP']))
     settings.extend([('TWFE', 'N.A.'), ('Abadie', 'N.A.')])
 
     for y_col in y_cols:
@@ -76,7 +56,8 @@ if __name__ == "__main__":
             t = time.time()
             method_name, model = setting
             print('Outcome: {}, Method: {}, ML model: {}'.format(y_col, method_name, model))
+            ps_model, or_model = model_selection(model)
             method = dct_method.get(method_name)
-            result = did(df, model, method, d_col, x_cols, [y_col], t_col, panel=False)
+            result = did(df, ps_model, or_model, method, d_col, x_cols, [y_col], t_col, panel=False)
             print(result)
             print('Time spent: {}'.format(time.time() - t))

@@ -12,7 +12,7 @@ pd.set_option('max_column', 500)
 pd.set_option('display.width', 500)
 np.set_printoptions(threshold=sys.maxsize)
 
-path = '' # ignored for privacy
+path = 'D:/中大工作/研究/GRF 2021/data/empirical data/dataverse_files/'
 
 df = pd.read_csv(path + 'wave1full/covid_pooled_public_1.0.0.csv', low_memory=False)
 
@@ -32,6 +32,9 @@ dct_mode = {'Question not displayed to respondent': 0, 'Private vehicle': 1, 'Tr
 # worker_pre
 # no          3175    89
 # yes          726  4733
+# pandemic-induced unemployment not considered, newly added workforce not considered,
+# 'never worker' to be treated differently
+# df = df[(df['worker_pre'] == 'yes') & (df['worker_now'] == 'yes')]
 
 # data processing steps
 df['now_sch_com_days'] = df[['now_sch_com_days_w1a', 'apr_sch_com_days_w1b']].max(axis=1)
